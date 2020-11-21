@@ -61,7 +61,7 @@ class Categorie
 
     /**
      * @ORM\Column(type="string", length=255)
-     * @Groups({"categorieRead", "categorieWrite", "articleRead", "userRead"})
+     * @Groups({"categorieRead", "categorieWrite", "articleRead", "userRead", "sondageRead"})
      */
     private $libelle;
 

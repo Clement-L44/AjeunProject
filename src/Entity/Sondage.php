@@ -45,6 +45,12 @@ use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\SearchFilter;
  *              "access_control" = "is_granted('ROLE_ADMIN')",
  *              "access_control_message" = "Vous n'avez pas les droits"
  *          }
+ *     },
+ *     subresourceOperations={
+            "api_sondages_articles_get_subresource"={
+ *              "method"="GET",
+ *              "path"="/sondages/{id}/article"
+ *          }
  *     }
  * )
  *
@@ -76,17 +82,18 @@ class Sondage
     private $titre;
 
     /**
-     * @ORM\ManyToOne(targetEntity=Article::class, inversedBy="sondages", cascade="persist")
-     * @Groups({"sondageRead"})
-     */
-    private $article;
-
-    /**
      * @ApiSubresource
      * @ORM\OneToMany(targetEntity=Reponse::class, mappedBy="sondage", orphanRemoval=true, cascade="persist")
      * @Groups({"sondageRead", "sondageWrite", "articleRead", "userRead"})
      */
     private $reponse;
+
+    /**
+     * @ORM\OneToOne(targetEntity=Article::class, inversedBy="sondages", cascade="persist")
+     * @Groups({"sondageRead"})
+     * @ApiSubresource
+     */
+    private $article;
 
 
     public function __construct()
@@ -124,18 +131,6 @@ class Sondage
         return $this;
     }
 
-    public function getArticle(): ?Article
-    {
-        return $this->article;
-    }
-
-    public function setArticle(?Article $article): self
-    {
-        $this->article = $article;
-
-        return $this;
-    }
-
     /**
      * @return Collection|Reponse[]
      */
@@ -166,5 +161,18 @@ class Sondage
 
         return $this;
     }
+
+    public function getArticle(): ?Article
+    {
+        return $this->article;
+    }
+
+    public function setArticle(?Article $article): self
+    {
+        $this->article = $article;
+
+        return $this;
+    }
+
 
 }

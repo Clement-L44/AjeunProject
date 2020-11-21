@@ -13,6 +13,7 @@ use ApiPlatform\Core\Annotation\ApiFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\BooleanFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\OrderFilter;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\DateFilter;
 
 /**
  * @ApiResource(
@@ -51,10 +52,12 @@ use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\OrderFilter;
  * )
  * @ApiFilter (SearchFilter::class, properties = { "titre" : "ipartial", "categorie" : "exact", "type" : "exact" } ),
  * @ApiFilter (BooleanFilter::class, properties= { "sondage" }),
- * @ApiFilter (OrderFilter::class, properties= {"date" = "desc", "Aime" = "desc"})
+ * @ApiFilter (OrderFilter::class, properties= {"date" = "desc", "Aime" = "desc"}),
+ * @ApiFilter (DateFilter::class, properties={"date"})
  *
  * @ORM\Entity(repositoryClass=ArticleRepository::class)
  */
+
 class Article
 {
     /**
@@ -107,28 +110,9 @@ class Article
     private $date;
 
     /**
-     * @ORM\OneToMany(targetEntity=Type::class, mappedBy="article", cascade="persist")
-     * @ApiSubresource
-     * @Groups({"articleRead", "articleWrite", "userRead"})
-     */
-    private $type;
-
-    /**
-     * @ORM\OneToMany(targetEntity=Sondage::class, mappedBy="article")
-     * @Groups({"articleRead", "articleWrite", "userRead"})
-     */
-    private $sondages;
-
-    /**
-     * @ORM\ManyToMany(targetEntity=Image::class, inversedBy="articles", cascade="persist")
-     * @Groups({"articleRead", "articleWrite", "userRead"})
-     */
-    private $image;
-
-    /**
      * @ORM\ManyToMany(targetEntity=Categorie::class, inversedBy="articles", cascade="persist")
      * @ApiSubresource
-     * @Groups({"articleRead", "articleWrite", "userRead"})
+     * @Groups({"articleRead", "articleWrite", "userRead", "sondageRead"})
      */
     private $categorie;
 
@@ -139,14 +123,32 @@ class Article
      */
     private $Auteur;
 
+    /**
+     * @ORM\ManyToOne(targetEntity=Image::class, inversedBy="article")
+     * @Groups({"articleRead", "articleWrite", "userRead"})
+     */
+    private $image;
+
+    /**
+     * @ORM\ManyToMany(targetEntity=Type::class, mappedBy="article")
+     * @ApiSubresource
+     * @Groups({"articleRead", "articleWrite", "userRead"})
+     */
+    private $types;
+
+    /**
+     * @ORM\OneToOne(targetEntity=Sondage::class, mappedBy="article", cascade={"persist", "remove"})
+     * @ApiSubresource
+     * @Groups({"articleRead", "articleWrite", "userRead"})
+     */
+    private $sondages;
+
     public function __construct()
     {
         $this->sondage = false;
         $this->date = new \DateTime();
         $this->categorie = new ArrayCollection();
-        $this->type = new ArrayCollection();
-        $this->sondages = new ArrayCollection();
-        $this->image = new ArrayCollection();
+        $this->types = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -227,94 +229,6 @@ class Article
     }
 
     /**
-     * @return Collection|Type[]
-     */
-    public function getType(): Collection
-    {
-        return $this->type;
-    }
-
-    public function addType(Type $type): self
-    {
-        if (!$this->type->contains($type)) {
-            $this->type[] = $type;
-            $type->setArticle($this);
-        }
-
-        return $this;
-    }
-
-    public function removeType(Type $type): self
-    {
-        if ($this->type->contains($type)) {
-            $this->type->removeElement($type);
-            // set the owning side to null (unless already changed)
-            if ($type->getArticle() === $this) {
-                $type->setArticle(null);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return Collection|Sondage[]
-     */
-    public function getSondages(): Collection
-    {
-        return $this->sondages;
-    }
-
-    public function addSondage(Sondage $sondage): self
-    {
-        if (!$this->sondages->contains($sondage)) {
-            $this->sondages[] = $sondage;
-            $sondage->setArticle($this);
-        }
-
-        return $this;
-    }
-
-    public function removeSondage(Sondage $sondage): self
-    {
-        if ($this->sondages->contains($sondage)) {
-            $this->sondages->removeElement($sondage);
-            // set the owning side to null (unless already changed)
-            if ($sondage->getArticle() === $this) {
-                $sondage->setArticle(null);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return Collection|Image[]
-     */
-    public function getImage(): Collection
-    {
-        return $this->image;
-    }
-
-    public function addImage(Image $image): self
-    {
-        if (!$this->image->contains($image)) {
-            $this->image[] = $image;
-        }
-
-        return $this;
-    }
-
-    public function removeImage(Image $image): self
-    {
-        if ($this->image->contains($image)) {
-            $this->image->removeElement($image);
-        }
-
-        return $this;
-    }
-
-    /**
      * @return Collection|Categorie[]
      */
     public function getCategorie(): Collection
@@ -348,6 +262,64 @@ class Article
     public function setAuteur(?User $Auteur): self
     {
         $this->Auteur = $Auteur;
+
+        return $this;
+    }
+
+    public function getImage(): ?Image
+    {
+        return $this->image;
+    }
+
+    public function setImage(?Image $image): self
+    {
+        $this->image = $image;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|Type[]
+     */
+    public function getTypes(): Collection
+    {
+        return $this->types;
+    }
+
+    public function addType(Type $type): self
+    {
+        if (!$this->types->contains($type)) {
+            $this->types[] = $type;
+            $type->addArticle($this);
+        }
+
+        return $this;
+    }
+
+    public function removeType(Type $type): self
+    {
+        if ($this->types->contains($type)) {
+            $this->types->removeElement($type);
+            $type->removeArticle($this);
+        }
+
+        return $this;
+    }
+
+    public function getSondages(): ?Sondage
+    {
+        return $this->sondages;
+    }
+
+    public function setSondages(?Sondage $sondages): self
+    {
+        $this->sondages = $sondages;
+
+        // set (or unset) the owning side of the relation if necessary
+        $newArticle = null === $sondages ? null : $this;
+        if ($sondages->getArticle() !== $newArticle) {
+            $sondages->setArticle($newArticle);
+        }
 
         return $this;
     }

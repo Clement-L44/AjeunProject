@@ -68,17 +68,15 @@ class Image
     private $titre;
 
     /**
-     * @ORM\ManyToMany(targetEntity=Article::class, mappedBy="image", cascade="persist")
+     * @ORM\OneToMany(targetEntity=Article::class, mappedBy="image")
      * @Groups({"imageRead"})
      */
-    private $articles;
-    
+    private $article;
 
     public function __construct()
     {
-        $this->articles = new ArrayCollection();
+        $this->article = new ArrayCollection();
     }
-
 
     public function getId(): ?int
     {
@@ -112,16 +110,16 @@ class Image
     /**
      * @return Collection|Article[]
      */
-    public function getArticles(): Collection
+    public function getArticle(): Collection
     {
-        return $this->articles;
+        return $this->article;
     }
 
     public function addArticle(Article $article): self
     {
-        if (!$this->articles->contains($article)) {
-            $this->articles[] = $article;
-            $article->addImage($this);
+        if (!$this->article->contains($article)) {
+            $this->article[] = $article;
+            $article->setImage($this);
         }
 
         return $this;
@@ -129,11 +127,15 @@ class Image
 
     public function removeArticle(Article $article): self
     {
-        if ($this->articles->contains($article)) {
-            $this->articles->removeElement($article);
-            $article->removeImage($this);
+        if ($this->article->contains($article)) {
+            $this->article->removeElement($article);
+            // set the owning side to null (unless already changed)
+            if ($article->getImage() === $this) {
+                $article->setImage(null);
+            }
         }
 
         return $this;
     }
+
 }
